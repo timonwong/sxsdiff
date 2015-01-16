@@ -6,6 +6,7 @@ import sys
 import textwrap
 from xml.sax.saxutils import escape
 
+import six
 from sxsdiff.generators import BaseGenerator
 
 _html_escape_table = {
@@ -16,7 +17,7 @@ _html_escape_table = {
 
 
 def html_escape(holder):
-    return escape(str(holder), _html_escape_table)
+    return escape(six.text_type(holder), _html_escape_table)
 
 
 _INLINE_CSS = """\

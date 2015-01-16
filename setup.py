@@ -5,7 +5,7 @@ long_description = open('README.md').read()
 
 setup(
     name='sxsdiff',
-    version='0.1.0',
+    version='0.2.0',
     url='https://github.com/timonwong/sxsdiff',
     license='BSD',
     author='Timon Wong',
@@ -27,5 +27,5 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
     packages=['sxsdiff'],
-    install_requires=['diff-match-patch']
+    install_requires=['diff-match-patch', 'six']
 )

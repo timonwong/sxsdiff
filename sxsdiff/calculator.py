@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple
-import itertools
 import re
+from collections import namedtuple
 
 import diff_match_patch
-
+import six
+from six.moves import zip_longest
 
 DIFF_DELETE = diff_match_patch.diff_match_patch.DIFF_DELETE
 DIFF_EQUAL = diff_match_patch.diff_match_patch.DIFF_EQUAL
@@ -13,6 +13,7 @@ DIFF_INSERT = diff_match_patch.diff_match_patch.DIFF_INSERT
 _LINESPLIT = re.compile(r'(?:\r?\n)')
 
 
+@six.python_2_unicode_compatible
 class Element(object):
     __slots__ = ('text', 'flag')
 
@@ -37,7 +38,7 @@ class Element(object):
         return self.text
 
     def __repr__(self):
-        return '<%s at %X: %s>' % (
+        return u'<%s at %X: %s>' % (
             self.__class__.__name__, id(self), repr(self.text))
 
     @property
@@ -142,17 +143,17 @@ class DiffCalculator(object):
         ls, rs = open_entry
         # Get unchanged parts onto the right line
         if ls[0] == rs[0]:
-            yield False, str(ls[0]), str(rs[0])
-            for l, r in itertools.izip_longest(ls[1:], rs[1:]):
+            yield False, ls[0], rs[0]
+            for l, r in zip_longest(ls[1:], rs[1:]):
                 l, r = cls._coerce_holders(l, r)
                 yield True, l, r
         elif ls[-1] == rs[-1]:
-            for l, r in itertools.izip_longest(ls[:-1], rs[:-1]):
+            for l, r in zip_longest(ls[:-1], rs[:-1]):
                 l, r = cls._coerce_holders(l, r)
                 yield l != r, l, r
-            yield False, str(ls[-1]), str(rs[-1])
+            yield False, ls[-1], rs[-1]
         else:
-            for l, r in itertools.izip_longest(ls, rs):
+            for l, r in zip_longest(ls, rs):
                 l, r = cls._coerce_holders(l, r)
                 yield True, l, r
 
