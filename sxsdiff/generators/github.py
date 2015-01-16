@@ -181,13 +181,15 @@ class GitHubStyledGenerator(BaseGenerator):
 
     def visit_row(self, line_change):
         if not line_change.changed:
-            self._spit_unchanged_side(line_change.left, line_change.left_no)
-            self._spit_unchanged_side(line_change.right, line_change.right_no)
+            self._spit_unchanged_side(
+                'L', line_change.left_no, line_change.left)
+            self._spit_unchanged_side(
+                'R', line_change.right_no, line_change.right)
         else:
-            self._spit_changed_side(line_change.left, line_change.left_no,
-                                    'deletion')
-            self._spit_changed_side(line_change.right, line_change.right_no,
-                                    'addition')
+            self._spit_changed_side(
+                'L', line_change.left_no, line_change.left)
+            self._spit_changed_side(
+                'R', line_change.right_no, line_change.right)
 
     @contextlib.contextmanager
     def wrap_row(self, line_change):
@@ -224,22 +226,16 @@ class GitHubStyledGenerator(BaseGenerator):
         </body>
         </html>"""))
 
-    def _spit_side_from_context(self, context):
-        # Line number
-        self._spit('      <td class="blob-num blob-num-%(mode)s base '
-                   'js-linkable-line-number" data-line-number="%(lineno)d">'
-                   '</td>' % context)
-        # Code
-        self._spit('      <td class="blob-code blob-code-%(mode)s base">'
-                   '%(code)s</td>' % context)
+    def _spit_unchanged_side(self, side_char, lineno, holder):
+        context = {
+            'side_id': '%s%d' % (side_char, lineno),
+            'mode': 'context',
+            'lineno': lineno,
+            'code': html_escape(holder),
+        }
+        self._spit_side_from_context(context)
 
-    def _spit_empty_side(self):
-        self._spit(
-            '      <td class="blob-num blob-num-empty head empty-cell"></td>')
-        self._spit(
-            '      <td class="blob-code blob-code-empty head empty-cell"></td>')
-
-    def _spit_changed_side(self, holder, lineno, mode):
+    def _spit_changed_side(self, side_char, lineno, holder):
         if not holder:
             self._spit_empty_side()
             return
@@ -252,17 +248,31 @@ class GitHubStyledGenerator(BaseGenerator):
             else:
                 bits.append(piece)
         code = ''.join(bits)
+
+        if side_char == 'L':
+            mode = 'deletion'
+        else:
+            mode = 'addition'
+
         context = {
+            'side_id': '%s%d' % (side_char, lineno),
             'mode': mode,
             'lineno': lineno,
             'code': code,
         }
         self._spit_side_from_context(context)
 
-    def _spit_unchanged_side(self, holder, lineno):
-        context = {
-            'mode': 'context',
-            'lineno': lineno,
-            'code': html_escape(holder),
-        }
-        self._spit_side_from_context(context)
+    def _spit_side_from_context(self, context):
+        # Line number
+        self._spit('      <td id="%(side_id)s" class="blob-num'
+                   ' blob-num-%(mode)s base js-linkable-line-number"'
+                   ' data-line-number="%(lineno)d"></td>' % context)
+        # Code
+        self._spit('      <td class="blob-code blob-code-%(mode)s base">'
+                   '%(code)s</td>' % context)
+
+    def _spit_empty_side(self):
+        self._spit(
+            '      <td class="blob-num blob-num-empty head empty-cell"></td>')
+        self._spit(
+            '      <td class="blob-code blob-code-empty head empty-cell"></td>')
