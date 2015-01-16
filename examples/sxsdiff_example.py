@@ -2,7 +2,7 @@
 import sys
 
 from sxsdiff import DiffCalculator
-from sxsdiff.generators.github import GitHubGenerator
+from sxsdiff.generators.github import GitHubStyledGenerator
 
 
 def main(argv):
@@ -16,7 +16,7 @@ def main(argv):
     with open(new_file) as f:
         new = f.read()
     sxsdiff_result = DiffCalculator().run(old, new)
-    GitHubGenerator(file=sys.stdout).run(sxsdiff_result)
+    GitHubStyledGenerator(file=sys.stdout).run(sxsdiff_result)
 
 
 if __name__ == '__main__':

@@ -2,11 +2,11 @@
 from __future__ import print_function
 
 import contextlib
+import sys
 import textwrap
 from xml.sax.saxutils import escape
 
 from sxsdiff.generators import BaseGenerator
-
 
 _html_escape_table = {
     ' ': "&nbsp;",
@@ -15,11 +15,11 @@ _html_escape_table = {
 }
 
 
-def html_escape(text):
-    return escape(text, _html_escape_table)
+def html_escape(holder):
+    return escape(str(holder), _html_escape_table)
 
 
-INLINE_CSS = """
+_INLINE_CSS = """
     table {
     border-spacing:0;
     }
@@ -170,23 +170,27 @@ INLINE_CSS = """
     }"""
 
 
-class GitHubGenerator(BaseGenerator):
+class GitHubStyledGenerator(BaseGenerator):
     def __init__(self, file=None):
+        if not file:
+            file = sys.stdout
         self._file = file
 
     def _spit(self, content):
         print(content, file=self._file)
 
-    def visit_row(self, changed, left, left_no, right, right_no):
-        if not changed:
-            self._spit_unchanged_side(left, left_no)
-            self._spit_unchanged_side(right, right_no)
+    def visit_row(self, line_change):
+        if not line_change.changed:
+            self._spit_unchanged_side(line_change.left, line_change.left_no)
+            self._spit_unchanged_side(line_change.right, line_change.right_no)
         else:
-            self._spit_changed_side(left, left_no, 'deletion')
-            self._spit_changed_side(right, right_no, 'addition')
+            self._spit_changed_side(line_change.left, line_change.left_no,
+                                    'deletion')
+            self._spit_changed_side(line_change.right, line_change.right_no,
+                                    'addition')
 
     @contextlib.contextmanager
-    def wrap_row(self, changed, left, left_no, right, right_no):
+    def wrap_row(self, line_change):
         self._spit('      <tr>')
         yield
         self._spit('      </tr>')
@@ -194,9 +198,12 @@ class GitHubGenerator(BaseGenerator):
     @contextlib.contextmanager
     def wrap_result(self, sxs_result):
         self._spit(textwrap.dedent("""\
+        <!doctype html>
+        <html>
         <head>
-          <style>
-          %s
+          <meta charset="utf-8">
+          <style type="text/css">
+          %(style)s
           </style>
         </head>
         <body>
@@ -204,7 +211,7 @@ class GitHubGenerator(BaseGenerator):
           <div class="file">
           <div class="data highlight blob-wrapper">
             <table class="diff-table file-diff-split">
-            <tbody>""" % INLINE_CSS))
+            <tbody>""" % {'style': _INLINE_CSS}))
 
         yield
 
@@ -214,16 +221,23 @@ class GitHubGenerator(BaseGenerator):
           </div>
           </div>
           </div>
-        </body>"""))
+        </body>
+        </html>"""))
 
     def _spit_side_from_context(self, context):
-        self._spit('      <td class="blob-num blob-num-%(mode)s base js-linkable-line-number" '
-                   'data-line-number="%(lineno)d"></td>' % context)
-        self._spit('      <td class="blob-code blob-code-%(mode)s base">%(code)s</td>' % context)
+        # Line number
+        self._spit('      <td class="blob-num blob-num-%(mode)s base '
+                   'js-linkable-line-number" data-line-number="%(lineno)d">'
+                   '</td>' % context)
+        # Code
+        self._spit('      <td class="blob-code blob-code-%(mode)s base">'
+                   '%(code)s</td>' % context)
 
     def _spit_empty_side(self):
-        self._spit('      <td class="blob-num blob-num-empty head empty-cell"></td>')
-        self._spit('      <td class="blob-code blob-code-empty head empty-cell"></td>')
+        self._spit(
+            '      <td class="blob-num blob-num-empty head empty-cell"></td>')
+        self._spit(
+            '      <td class="blob-code blob-code-empty head empty-cell"></td>')
 
     def _spit_changed_side(self, holder, lineno, mode):
         if not holder:
@@ -232,7 +246,7 @@ class GitHubGenerator(BaseGenerator):
 
         bits = []
         for elem in holder.elements:
-            piece = html_escape(str(elem))
+            piece = html_escape(elem)
             if elem.is_changed:
                 bits.append('<span class="x x-first x-last">%s</span>' % piece)
             else:

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from collections import namedtuple
 import itertools
 import re
 
@@ -9,13 +10,22 @@ DIFF_DELETE = diff_match_patch.diff_match_patch.DIFF_DELETE
 DIFF_EQUAL = diff_match_patch.diff_match_patch.DIFF_EQUAL
 DIFF_INSERT = diff_match_patch.diff_match_patch.DIFF_INSERT
 
+_LINESPLIT = re.compile(r'(?:\r?\n)')
+
 
 class Element(object):
-    __slots__ = ['text', 'flag']
+    __slots__ = ('text', 'flag')
+
+    # Make the element a simple immutable object, so we can re-use the element
+    # safely.
+    def __setattr__(self, *args):
+        raise TypeError("Can not modify immutable class instance: %s" %
+                        self.__class__.__name__)
+    __delattr__ = __setattr__
 
     def __init__(self, text, flag):
-        self.text = text
-        self.flag = flag
+        super(Element, self).__setattr__('text', text)
+        super(Element, self).__setattr__('flag', flag)
 
     def __eq__(self, other):
         return self.text == other.text and self.flag == other.flag
@@ -51,7 +61,7 @@ class DeletionElement(Element):
 
 
 class ElementsHolder(object):
-    __slots__ = ['elements', '_change_flag']
+    __slots__ = ('elements', '_change_flag')
 
     def __init__(self, *items):
         self._change_flag = DIFF_EQUAL
@@ -64,7 +74,7 @@ class ElementsHolder(object):
         # Update holder flag
         if self._change_flag == DIFF_EQUAL:
             self._change_flag = elem.flag
-        # Meld into previos one if element flag is same
+        # Meld into previous one if element flag is same
         if len(self.elements):
             prev_elem = self.elements[-1]
             if not prev_elem.text or prev_elem.flag == elem.flag:
@@ -93,6 +103,16 @@ class ElementsHolder(object):
         else:
             type_text = 'DELETE'
         return '<%s> ' % type_text + repr(self.elements)
+
+
+LineChange = namedtuple(
+    'LineChange',
+    [
+        'changed',  # is line have change
+        'left', 'left_no',  # left side
+        'right', 'right_no'  # right side
+    ],
+)
 
 
 class DiffCalculator(object):
@@ -136,18 +156,18 @@ class DiffCalculator(object):
                 l, r = cls._coerce_holders(l, r)
                 yield True, l, r
 
-    def run(self, old, new):
+    def _run(self, old, new):
         diffs = self.calc_diff_result(old, new)
-        re_linesplit = re.compile(r'(?:\r?\n)')
         open_entry = ([ElementsHolder()], [ElementsHolder()])
         for flag, data in diffs:
-            lines = re_linesplit.split(data)
+            lines = _LINESPLIT.split(data)
             # Merge with previous entry if still open
             ls, rs = open_entry
             line = lines[0]
             if flag == DIFF_EQUAL:
-                ls[-1].append(PlainElement(line))
-                rs[-1].append(PlainElement(line))
+                elem = PlainElement(line)
+                ls[-1].append(elem)
+                rs[-1].append(elem)
             elif flag == DIFF_INSERT:
                 rs[-1].append(AdditionElement(line))
             elif flag == DIFF_DELETE:
@@ -158,14 +178,14 @@ class DiffCalculator(object):
                     # Push out open entry
                     for entry in self._yield_open_entry(open_entry):
                         yield entry
-                    # Directly push out lines until last
+                    # Directly push out lines because there is no change
                     for line in lines[:-1]:
-                        yield False, line, line
+                        elem = PlainElement(line)
+                        yield False, ElementsHolder(elem), ElementsHolder(elem)
                     # Keep last line open
+                    elem = PlainElement(lines[-1])
                     open_entry = (
-                        [ElementsHolder(PlainElement(lines[-1]))],
-                        [ElementsHolder(PlainElement(lines[-1]))],
-                    )
+                        [ElementsHolder(elem)], [ElementsHolder(elem)])
                 elif flag == DIFF_INSERT:
                     ls, rs = open_entry
                     for line in lines:
@@ -177,3 +197,15 @@ class DiffCalculator(object):
         # Push out open entry
         for entry in self._yield_open_entry(open_entry):
             yield entry
+
+    def run(self, old, new):
+        """Wraps line numbers"""
+        left_no = 1
+        right_no = 1
+        for changed, left, right in self._run(old, new):
+            yield LineChange(changed=changed, left=left, left_no=left_no,
+                             right=right, right_no=right_no)
+            if left:
+                left_no += 1
+            if right:
+                right_no += 1
