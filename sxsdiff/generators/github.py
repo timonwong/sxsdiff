@@ -19,7 +19,8 @@ def html_escape(holder):
     return escape(str(holder), _html_escape_table)
 
 
-_INLINE_CSS = """
+_INLINE_CSS = """\
+    <style type="text/css">
     table {
     border-spacing:0;
     }
@@ -167,7 +168,24 @@ _INLINE_CSS = """
     border-top-left-radius:4px;
     border-top-right-radius:4px;
     padding:5px 10px;
-    }"""
+    }
+    </style>"""
+
+
+_INLINE_JS = """\
+  <script type="text/javascript">
+    !function () {
+      document.addEventListener('click', function (event) {
+        var target = event.target
+        var classNames = target.className.split(/\s+/)
+        if (classNames.indexOf('js-linkable-line-number') !== -1) {
+          var hash = target.getAttribute('id')
+          window.location.hash = hash
+        }
+      }, false)
+    }()
+  </script>
+"""
 
 
 class GitHubStyledGenerator(BaseGenerator):
@@ -204,16 +222,16 @@ class GitHubStyledGenerator(BaseGenerator):
         <html>
         <head>
           <meta charset="utf-8">
-          <style type="text/css">
-          %(style)s
-          </style>
+          %(inline_css)s
         </head>
         <body>
+          %(inline_js)s
           <div class="container">
           <div class="file">
           <div class="data highlight blob-wrapper">
             <table class="diff-table file-diff-split">
-            <tbody>""" % {'style': _INLINE_CSS}))
+            <tbody>""" % {'inline_css': _INLINE_CSS,
+                          'inline_js': _INLINE_JS}))
 
         yield
 
