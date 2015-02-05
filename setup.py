@@ -1,11 +1,13 @@
+import os
 from setuptools import setup
 
-long_description = open('README.md').read()
+with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
+    long_description = f.read()
 
 
 setup(
     name='sxsdiff',
-    version='0.2.0',
+    version='0.2.1',
     url='https://github.com/timonwong/sxsdiff',
     license='BSD',
     author='Timon Wong',
