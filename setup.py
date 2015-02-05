@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import find_packages, setup
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
     long_description = f.read()
@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md')) as f:
 
 setup(
     name='sxsdiff',
-    version='0.2.1',
+    version='0.2.3',
     url='https://github.com/timonwong/sxsdiff',
     license='BSD',
     author='Timon Wong',
@@ -28,6 +28,6 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
-    packages=['sxsdiff'],
-    install_requires=['diff-match-patch', 'six']
+    packages=find_packages(),
+    install_requires=['diff-match-patch', 'six>=1.9.0']
 )
