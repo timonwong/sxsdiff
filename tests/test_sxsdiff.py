@@ -1,4 +1,5 @@
 import pytest
+import six
 
 from sxsdiff import DiffCalculator
 from sxsdiff.calculator import DIFF_DELETE
@@ -21,7 +22,7 @@ same_codes_test_data = [
 
 
 @pytest.mark.parametrize('code', same_codes_test_data,
-                         ids=map(repr, same_codes_test_data))
+                         ids=list(map(repr, same_codes_test_data)))
 def test_same_code(code, diff_calc):
     result = diff_calc.run(code, code)
     result = list(result)
