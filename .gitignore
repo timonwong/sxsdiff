@@ -4,3 +4,8 @@ build
 dist
 *.egg-info
 *.py[cod]
+
+*.sublime-project
+*.sublime-workspace
+
+RELEASE-VERSION

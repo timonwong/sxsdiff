@@ -204,8 +204,11 @@ class DiffCalculator(object):
         left_no = 1
         right_no = 1
         for changed, left, right in self._run(old, new):
-            yield LineChange(changed=changed, left=left, left_no=left_no,
-                             right=right, right_no=right_no)
+            yield LineChange(changed=changed,
+                             left=left,
+                             left_no=left_no if left else None,
+                             right=right,
+                             right_no=right_no if right else None)
             if left:
                 left_no += 1
             if right:
