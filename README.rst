@@ -1,6 +1,10 @@
 sxsdiff
 -------
 
+.. image:: https://travis-ci.org/timonwong/sxsdiff.svg?branch=master
+    :alt: Travis-CI Build Status
+    :target: https://travis-ci.org/timonwong/sxsdiff
+
 Side by side diff generator for python.
 
 Credits
