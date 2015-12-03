@@ -1,7 +1,9 @@
 .idea
 .venv
+.cache
 build
 dist
+*.egg
 *.egg-info
 *.py[cod]
 
