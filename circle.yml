@@ -1,0 +1,11 @@
+machine:
+  python:
+    version: 3.5
+
+dependencies:
+  override:
+    - echo ""
+
+test:
+  override:
+    - python setup.py test
